@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Alexa.NET;
 using Amazon.Lambda.Core;
 using Alexa.NET.Request;
@@ -22,6 +23,7 @@ namespace AlexaCSharpRandomNumberGenerator
             // context.Logger.Log($"The Lambda Context is:");
             // context.Logger.Log(jsonContext);
 
+            Debug.Assert(input != null, nameof(input) + " != null");
             var session = input.Session;
             session.Attributes ??= new Dictionary<string, object>();
 
@@ -42,16 +44,20 @@ namespace AlexaCSharpRandomNumberGenerator
                     switch (intentRequest.Intent.Name)
                     {
                         case "RandomNumberGenerator":
+                        case "NegativeRandomNumberGenerator":
+                        {
                             int min = 0, max = int.MaxValue;
-                            
+
                             var slots = intentRequest.Intent.Slots;
                             if (slots.TryGetValue("min", out var minSlot) && !string.IsNullOrEmpty(minSlot.Value))
                                 min = Convert.ToInt32(minSlot.Value);
                             if (slots.TryGetValue("max", out var maxSlot) && !string.IsNullOrEmpty(maxSlot.Value))
                                 max = Convert.ToInt32(maxSlot.Value);
 
-                            return ResponseBuilder.Tell(new Random(DateTime.Now.Millisecond).Next(min, max).ToString());
-                        
+                            var multiplier = intentRequest.Intent.Name.StartsWith("Negative") ? -1 : 1;
+                            return ResponseBuilder.Tell((new Random(DateTime.Now.Millisecond).Next(min, max) * multiplier).ToString());
+                        }
+
                         case "AMAZON.CancelIntent":
                         case "AMAZON.StopIntent":
                             return ResponseBuilder.Tell("Goodbye!");
