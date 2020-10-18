@@ -1,28 +1,53 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
+using Alexa.NET.Request;
+using Alexa.NET.Request.Type;
+using Alexa.NET.Response;
 using Xunit;
-using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
-
-using AlexaCSharpRandomNumberGenerator;
 
 namespace AlexaCSharpRandomNumberGenerator.Tests
 {
     public class FunctionTest
     {
         [Fact]
-        public void TestToUpperFunction()
+        public void TestLambdaFunction()
         {
-
-            // Invoke the lambda function and confirm the string was upper cased.
-            var function = new Function();
+	        var function = new Function();
             var context = new TestLambdaContext();
-            var upperCase = function.FunctionHandler("hello world", context);
+            var request = new SkillRequest
+            {
+	            Request = new IntentRequest
+	            {
+		            Type = nameof(IntentRequest),
+		            Timestamp = DateTime.Now,
+		            Locale = "en-US",
+		            RequestId = "amzn1.echo-api.request.75628577-8998-46bb-a24e-14e629aaa637",
+		            Intent = new Intent
+		            {
+			            Name = "RandomNumberGenerator",
+			            ConfirmationStatus = "NONE",
+			            Slots = new Dictionary<string, Slot>
+			            {
+				            {"min", new Slot {Name = "min", SlotValue = new SlotValue {Value = "100"}, Value = "100", ConfirmationStatus = "NONE", Source = "USER"}},
+				            {"max", new Slot {Name = "max", SlotValue = new SlotValue {Value = "200"}, Value = "200", ConfirmationStatus = "NONE", Source = "USER"}}
+			            }
+		            }
+	            },
+	            Session = new Session()
+            };
 
-            Assert.Equal("HELLO WORLD", upperCase);
+            var response = function.FunctionHandler(request, context);
+
+            Assert.NotNull(response);
+            Assert.NotNull(response.Response);
+            Assert.NotNull(response.Response.OutputSpeech);
+            
+            var speech = response.Response.OutputSpeech as PlainTextOutputSpeech;
+            Assert.NotNull(speech);
+            Assert.NotNull(speech.Text);
+            var num = Convert.ToInt32(speech.Text);
+            Assert.True(num >= 100 && num <= 200);
         }
     }
 }
